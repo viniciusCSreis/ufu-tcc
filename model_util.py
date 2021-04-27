@@ -71,7 +71,7 @@ class ImgTester:
         self.test_img_dir = test_img_dir
         self.img_size = img_size
 
-    def test(self, img_to_test, img_to_plot, metric):
+    def test(self, img_to_test, img_to_plot, metric, threshold):
 
         model = keras.models.load_model(model_path(self.dir_path))
 
@@ -104,8 +104,8 @@ class ImgTester:
 
             predict_images = model.predict(np.array([train_img]))
             predict_img = predict_images[0]
-            predict_img[predict_img > 0.5] = 1
-            predict_img[predict_img <= 0.5] = 0
+            predict_img[predict_img > threshold] = 1
+            predict_img[predict_img <= threshold] = 0
 
             metric.reset_states()
             metric.update_state(test_img, predict_img)
