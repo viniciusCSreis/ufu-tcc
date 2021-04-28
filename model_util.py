@@ -71,7 +71,7 @@ class ImgTester:
         self.test_img_dir = test_img_dir
         self.img_size = img_size
 
-    def test(self, img_to_test, img_to_plot, metric, threshold):
+    def test(self, img_to_test, img_to_plot, metrics, threshold):
 
         model = keras.models.load_model(model_path(self.dir_path))
 
@@ -107,10 +107,14 @@ class ImgTester:
             predict_img[predict_img > threshold] = 1
             predict_img[predict_img <= threshold] = 0
 
-            metric.reset_states()
-            metric.update_state(test_img, predict_img)
-            predict_metric = metric.result().numpy()
-            predict_metrics.append({"name": file, "metric": predict_metric})
+            result_metrics = []
+            for metric in metrics:
+                metric.reset_states()
+                metric.update_state(test_img, predict_img)
+                predict_metric = metric.result().numpy()
+                result_metrics.append(predict_metric)
+
+            predict_metrics.append({"name": file, "metric": result_metrics})
 
             predict_img_original_size = cv2.resize(
                 predict_img,
@@ -168,7 +172,10 @@ class ImgTester:
         plt.show()
         predict_metrics_path =os.path.join(self.dir_path, 'metrics.csv')
         wtr = csv.writer(open(predict_metrics_path, 'w'), delimiter=',', lineterminator='\n')
-        for p_metric in predict_metrics: wtr.writerow([p_metric['name'], p_metric['metric']])
+        for p_metric in predict_metrics:
+            row = [p_metric['name']]
+            row.extend(p_metric['metric'])
+            wtr.writerow(row)
         print("\nWrite metrics to:", predict_metrics_path)
 
 
