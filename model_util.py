@@ -71,9 +71,9 @@ class ImgTester:
         self.test_img_dir = test_img_dir
         self.img_size = img_size
 
-    def test(self, img_to_test, img_to_plot, metrics, threshold):
+    def test(self, img_to_test, img_to_plot, metrics, threshold, dependencies):
 
-        model = keras.models.load_model(model_path(self.dir_path))
+        model = keras.models.load_model(model_path(self.dir_path), custom_objects=dependencies)
 
         i = 0
         n = 1
