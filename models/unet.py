@@ -21,7 +21,7 @@ def bottleneck(x, filters, kernel_size=(3, 3), padding="same", strides=1):
     return c
 
 
-def build(img_size, model_sizes, activation="sigmoid"):
+def build(img_size, model_sizes, activation="sigmoid", number_of_class=1):
     inputs = keras.layers.Input(shape=img_size + (3,))
     p0 = inputs
     down_blocks_layers = [{
@@ -42,7 +42,7 @@ def build(img_size, model_sizes, activation="sigmoid"):
         p = up_block(up_blocks_layers[i], down_blocks_layers[invert_i]["c"], model_sizes[invert_i])
         up_blocks_layers.append(p)
 
-    outputs = keras.layers.Conv2D(1, (1, 1), padding="same", activation=activation)(
+    outputs = keras.layers.Conv2D(number_of_class, 3, padding="same", activation=activation)(
         up_blocks_layers[len(up_blocks_layers) - 1])
     model = keras.models.Model(inputs, outputs)
     return model
