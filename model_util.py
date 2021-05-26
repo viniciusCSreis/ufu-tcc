@@ -184,7 +184,7 @@ def model_path(base_path):
 
 
 class ImgTesterV2:
-    def __init__(self, x_dir, y_dir, output_path, img_size, metrics):
+    def __init__(self, x_dir, y_dir, output_path, img_size, metrics, dependencies):
         x_files = os.listdir(x_dir)
         x_files.sort()
         self.x_files = x_files
@@ -199,15 +199,17 @@ class ImgTesterV2:
         self.output_path = output_path
         self.img_size = img_size
         self.model_metrics = metrics
+        self.dependencies = dependencies
 
     def load_model(self):
-        return keras.models.load_model(model_path(self.output_path))
+        return keras.models.load_model(model_path(self.output_path), custom_objects=self.dependencies)
 
     def load_x(self, i):
         x_name = self.x_files[i]
         x_img_path = os.path.join(self.x_dir, x_name)
         x_img_original = cv2.imread(x_img_path, 1)
         x_img = cv2.resize(x_img_original, self.img_size)
+        x_img = x_img / 255.0
         return x_img, x_img_original, x_name
 
     def load_y(self, i):
@@ -240,9 +242,9 @@ class ImgTesterV2:
         pred_img_2 = np.zeros((pred_img.shape[0], pred_img.shape[1]))
 
         pred_img_2[pred_img[:, :, 1] == 1] = 128
-        pred_img_2[pred_img[:, :, 2] == 1] = 256
+        pred_img_2[pred_img[:, :, 2] == 1] = 255
 
-        return pred_img_2
+        return np.int_(pred_img_2)
 
 
     def metrics(self, pred_img, y_img):
@@ -329,17 +331,31 @@ def test_v2(output_dir, img_util, img_to_test, img_to_plot):
 import tensorflow as tf
 
 if __name__ == '__main__':
-    image_size = (128, 128)
-    base_output_path = '..\\imagens_cra\\result\\unet_multiclass_epoch_100_size_(128, 128)'
+    image_size = (320, 320)
+    base_output_path = '..\\imagens_cra\\result\\unet_multiclass_epoch_20_size_(320, 320)'
     x_dir = "../imagens_cra/train/cra"
     y_dir = "../imagens_cra/validation_interna_externa_v2/cra"
-    metric = tf.keras.metrics.BinaryAccuracy()
+    metric = tf.keras.metrics.Accuracy()
 
     imgTester_metrics = [
         metric,
     ]
+    metric_name = "mean_iou_threshold"
 
-    imgUtil = ImgTesterV2(x_dir, y_dir, base_output_path, image_size, imgTester_metrics)
+    threshold = 0.5
+    def mean_iou_threshold(y_true, y_pred):
+        y_pred = y_pred.numpy()
+        y_pred[y_pred > threshold] = 1
+        y_pred[y_pred <= threshold] = 0
+        metric.reset_states()
+        metric.update_state(y_true, y_pred)
+        return metric.result().numpy()
+
+    dependencies = {
+        metric_name: mean_iou_threshold,
+    }
+
+    imgUtil = ImgTesterV2(x_dir, y_dir, base_output_path, image_size, imgTester_metrics, dependencies)
 
     imgs = len(os.listdir(y_dir))
     test_v2(base_output_path, imgUtil, imgs, 5)
