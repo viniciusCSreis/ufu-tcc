@@ -107,21 +107,23 @@ class ImgTester:
             predict_img[predict_img > threshold] = 1
             predict_img[predict_img <= threshold] = 0
 
-            result_metrics = []
-            for metric in metrics:
-                metric.reset_states()
-                metric.update_state(test_img, predict_img)
-                predict_metric = metric.result().numpy()
-                result_metrics.append(predict_metric)
-
-            predict_metrics.append({"name": file, "metric": result_metrics})
-
             predict_img_original_size = cv2.resize(
                 predict_img,
                 (train_img_shape[1], train_img_shape[0]),
                 interpolation=cv2.INTER_NEAREST
             )
             predict_img_original_size = predict_img_original_size * 255.0
+
+            result_metrics = []
+            for metric in metrics:
+                metric.reset_states()
+                original_test = original_test_img / 255.0
+                originaL_pred = predict_img_original_size / 255.0
+                metric.update_state(original_test, originaL_pred)
+                predict_metric = metric.result().numpy()
+                result_metrics.append(predict_metric)
+
+            predict_metrics.append({"name": file, "metric": result_metrics})
 
             if i < img_to_plot:
                 for j in range(3):
@@ -330,32 +332,32 @@ def test_v2(output_dir, img_util, img_to_test, img_to_plot):
 
 import tensorflow as tf
 
-if __name__ == '__main__':
-    image_size = (320, 320)
-    base_output_path = '..\\imagens_cra\\result\\unet_multiclass_epoch_20_size_(320, 320)'
-    x_dir = "../imagens_cra/train/cra"
-    y_dir = "../imagens_cra/validation_interna_externa_v2/cra"
-    metric = tf.keras.metrics.Accuracy()
-
-    imgTester_metrics = [
-        metric,
-    ]
-    metric_name = "mean_iou_threshold"
-
-    threshold = 0.5
-    def mean_iou_threshold(y_true, y_pred):
-        y_pred = y_pred.numpy()
-        y_pred[y_pred > threshold] = 1
-        y_pred[y_pred <= threshold] = 0
-        metric.reset_states()
-        metric.update_state(y_true, y_pred)
-        return metric.result().numpy()
-
-    dependencies = {
-        metric_name: mean_iou_threshold,
-    }
-
-    imgUtil = ImgTesterV2(x_dir, y_dir, base_output_path, image_size, imgTester_metrics, dependencies)
-
-    imgs = len(os.listdir(y_dir))
-    test_v2(base_output_path, imgUtil, imgs, 5)
+# if __name__ == '__main__':
+#     image_size = (320, 320)
+#     base_output_path = '..\\imagens_cra\\result\\unet_multiclass_epoch_20_size_(320, 320)'
+#     x_dir = "../imagens_cra/train/cra"
+#     y_dir = "../imagens_cra/validation_interna_externa_v2/cra"
+#     metric = tf.keras.metrics.Accuracy()
+#
+#     imgTester_metrics = [
+#         metric,
+#     ]
+#     metric_name = "mean_iou_threshold"
+#
+#     threshold = 0.5
+#     def mean_iou_threshold(y_true, y_pred):
+#         y_pred = y_pred.numpy()
+#         y_pred[y_pred > threshold] = 1
+#         y_pred[y_pred <= threshold] = 0
+#         metric.reset_states()
+#         metric.update_state(y_true, y_pred)
+#         return metric.result().numpy()
+#
+#     dependencies = {
+#         metric_name: mean_iou_threshold,
+#     }
+#
+#     imgUtil = ImgTesterV2(x_dir, y_dir, base_output_path, image_size, imgTester_metrics, dependencies)
+#
+#     imgs = len(os.listdir(y_dir))
+#     test_v2(base_output_path, imgUtil, imgs, 5)
