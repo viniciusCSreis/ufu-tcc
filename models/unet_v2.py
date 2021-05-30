@@ -1,11 +1,7 @@
 from tensorflow.keras import layers
 import tensorflow.keras as keras
 
-def unet_v2_get_model(img_size, num_classes, activation="softmax", filters_by_layers =None):
-
-    filters_layers = [64, 128, 256]
-    if filters_by_layers is not None:
-        filters_layers = filters_by_layers
+def unet_v2_get_model(img_size, num_classes, activation="softmax"):
 
     inputs = keras.Input(shape=img_size + (3,))
 
@@ -19,7 +15,7 @@ def unet_v2_get_model(img_size, num_classes, activation="softmax", filters_by_la
     previous_block_activation = x  # Set aside residual
 
     # Blocks 1, 2, 3 are identical apart from the feature depth.
-    for filters in filters_layers:
+    for filters in [64, 128, 256]:
         x = layers.Activation("relu")(x)
         x = layers.SeparableConv2D(filters, 3, padding="same")(x)
         x = layers.BatchNormalization()(x)
@@ -39,7 +35,7 @@ def unet_v2_get_model(img_size, num_classes, activation="softmax", filters_by_la
 
     ### [Second half of the network: upsampling inputs] ###
 
-    for filters in filters_layers.reverse():
+    for filters in [256, 128, 64, 32]:
         x = layers.Activation("relu")(x)
         x = layers.Conv2DTranspose(filters, 3, padding="same")(x)
         x = layers.BatchNormalization()(x)

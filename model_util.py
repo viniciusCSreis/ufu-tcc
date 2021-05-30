@@ -219,10 +219,13 @@ class ImgTesterV2:
         y_img_path = os.path.join(self.y_dir, y_name)
         y_img = cv2.imread(y_img_path, 0)
 
-        y_img[y_img == 1] = 128
-        y_img[y_img == 2] = 255
+        y_img_normalized = np.zeros(y_img.shape + (3, ))
 
-        return y_img, y_name
+        y_img_normalized[y_img == 0] = np.array([1, 0, 0])
+        y_img_normalized[y_img == 1] = np.array([0, 1, 0])
+        y_img_normalized[y_img == 2] = np.array([0, 0, 1])
+
+        return y_img_normalized, y_name
 
     def metrics_name(self):
         metrics_name = []
@@ -241,12 +244,14 @@ class ImgTesterV2:
             interpolation=cv2.INTER_NEAREST
         )
 
-        pred_img_2 = np.zeros((pred_img.shape[0], pred_img.shape[1]))
+        return pred_img
 
-        pred_img_2[pred_img[:, :, 1] == 1] = 128
-        pred_img_2[pred_img[:, :, 2] == 1] = 255
+    def color_img(self, img):
+        color_img = np.zeros((img.shape[0], img.shape[1]))
 
-        return np.int_(pred_img_2)
+        color_img[img[:, :, 1] == 1] = 128
+        color_img[img[:, :, 2] == 1] = 255
+        return color_img
 
 
     def metrics(self, pred_img, y_img):
@@ -305,7 +310,7 @@ def test_v2(output_dir, img_util, img_to_test, img_to_plot):
 
         result_filename = x_name.replace(".jpg", "_result.png")
         result_path = os.path.join(result_dir, result_filename)
-        cv2.imwrite(result_path, pred_img)
+        cv2.imwrite(result_path, img_util.color_img(pred_img))
 
         x_filename = x_name.replace(".jpg", "_x.jpg")
         x_path = os.path.join(result_dir, x_filename)
@@ -313,7 +318,7 @@ def test_v2(output_dir, img_util, img_to_test, img_to_plot):
 
         y_filename = y_name.replace(".jpg", "_y.png")
         y_path = os.path.join(result_dir, y_filename)
-        cv2.imwrite(y_path, y_img)
+        cv2.imwrite(y_path, img_util.color_img(y_img))
 
         if i % 100 == 0:
             print(f'\n[{i}]:', end='')
@@ -332,32 +337,33 @@ def test_v2(output_dir, img_util, img_to_test, img_to_plot):
 
 import tensorflow as tf
 
-# if __name__ == '__main__':
-#     image_size = (320, 320)
-#     base_output_path = '..\\imagens_cra\\result\\unet_multiclass_epoch_20_size_(320, 320)'
-#     x_dir = "../imagens_cra/train/cra"
-#     y_dir = "../imagens_cra/validation_interna_externa_v2/cra"
-#     metric = tf.keras.metrics.Accuracy()
-#
-#     imgTester_metrics = [
-#         metric,
-#     ]
-#     metric_name = "mean_iou_threshold"
-#
-#     threshold = 0.5
-#     def mean_iou_threshold(y_true, y_pred):
-#         y_pred = y_pred.numpy()
-#         y_pred[y_pred > threshold] = 1
-#         y_pred[y_pred <= threshold] = 0
-#         metric.reset_states()
-#         metric.update_state(y_true, y_pred)
-#         return metric.result().numpy()
-#
-#     dependencies = {
-#         metric_name: mean_iou_threshold,
-#     }
-#
-#     imgUtil = ImgTesterV2(x_dir, y_dir, base_output_path, image_size, imgTester_metrics, dependencies)
-#
-#     imgs = len(os.listdir(y_dir))
-#     test_v2(base_output_path, imgUtil, imgs, 5)
+if __name__ == '__main__':
+    image_size = (320, 320)
+    base_output_path = '..\\imagens_cra\\result\\unet_multiclass_epoch_2_size_(320, 320)'
+    x_dir = "../imagens_cra/train/cra"
+    y_dir = "../imagens_cra/validation_interna_externa_v2/cra"
+
+
+    metric_name = "mean_iou_threshold"
+    metric = tf.keras.metrics.MeanIoU(num_classes=2, name=metric_name)
+    imgTester_metrics = [
+        metric,
+    ]
+
+    threshold = 0.5
+    def mean_iou_threshold(y_true, y_pred):
+        y_pred = y_pred.numpy()
+        y_pred[y_pred > threshold] = 1
+        y_pred[y_pred <= threshold] = 0
+        metric.reset_states()
+        metric.update_state(y_true, y_pred)
+        return metric.result().numpy()
+
+    dependencies = {
+        metric_name: mean_iou_threshold,
+    }
+
+    imgUtil = ImgTesterV2(x_dir, y_dir, base_output_path, image_size, imgTester_metrics, dependencies)
+
+    imgs = len(os.listdir(y_dir))
+    test_v2(base_output_path, imgUtil, 5, 5)
