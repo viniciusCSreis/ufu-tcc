@@ -1,10 +1,11 @@
 import csv
 import os
+
 import cv2
 import matplotlib.pyplot as plt
-import tensorflow.keras as keras
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import numpy as np
+import pandas as pd
+import tensorflow.keras as keras
 
 
 def load_all_imgs(path, image_size, mode):
@@ -36,10 +37,21 @@ class Saver:
         self.history = history
         self.dir_path = dir_path
 
-    def save_model(self):
-        filename = model_path(self.dir_path)
-        self.model.save(filename)
-        print("saved to:", filename)
+    def save_history(self):
+        # convert the history.history dict to a pandas DataFrame:
+        hist_df = pd.DataFrame(self.history.history)
+
+        # save to json:
+        hist_json_file = os.path.join(self.dir_path,'history.json')
+        with open(hist_json_file, mode='w') as f:
+            hist_df.to_json(f)
+        print("saved to:", hist_json_file)
+
+        # or save to csv:
+        hist_csv_file = os.path.join(self.dir_path,'history.csv')
+        with open(hist_csv_file, mode='w') as f:
+            hist_df.to_csv(f)
+        print("saved to:", hist_csv_file)
 
     def save_metrics(self, metric_name):
         plt.plot(self.history.history[str(metric_name)])
