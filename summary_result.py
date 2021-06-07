@@ -18,6 +18,11 @@ if __name__ == '__main__':
         summary.append(
             [
                 folder,
+                metrics_csv["IoU"].mean(),
+                metrics_csv["IoU"].median(),
+                metrics_csv["IoU"].min(),
+                metrics_csv["IoU"].max(),
+                metrics_csv["IoU"].size,
                 train["IoU"].mean(),
                 train["IoU"].median(),
                 train["IoU"].min(),
@@ -33,6 +38,7 @@ if __name__ == '__main__':
 
     summary_df = pd.DataFrame(summary, columns=[
         "rede",
+        "global_mean", "global_median", "global_min", "global_max", "global_size",
         "train_mean", "train_median", "train_min", "train_max", "train_size",
         "val_mean", "val_median", "val_min", "val_max", "val_size",
     ])
